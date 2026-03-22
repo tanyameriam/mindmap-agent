@@ -1171,30 +1171,41 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Shortcut Button */
+/* Shortcut Button Refined */
+.chat-shortcuts {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.chat-shortcuts.hidden {
+  display: none;
+}
+
 .shortcut-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  height: 42px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 13px;
+  gap: 6px;
+  padding: 6px 14px;
+  height: auto;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-  margin-left: 8px;
+  box-shadow: none;
+  margin: 0;
 }
 
 .shortcut-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-  filter: brightness(1.1);
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
 }
 
 .shortcut-btn:active:not(:disabled) {
@@ -1204,9 +1215,4 @@ body {
 .shortcut-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  filter: grayscale(1);
-}
-
-.shortcut-btn.hidden {
-  display: none;
 }

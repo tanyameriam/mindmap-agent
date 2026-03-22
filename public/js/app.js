@@ -166,7 +166,7 @@ const App = (() => {
           statusMessageId = null;
         }
         Chat.addClarificationQuestions(data.questions);
-        document.getElementById('generateNowBtn').classList.remove('hidden');
+        document.getElementById('chatShortcuts').classList.remove('hidden');
         clearAllAgentActive();
         break;
 
@@ -182,13 +182,13 @@ const App = (() => {
           statusMessageId = null;
         }
         MindMap.render(data.markdown);
-        document.getElementById('generateNowBtn').classList.add('hidden');
+        document.getElementById('chatShortcuts').classList.add('hidden');
         setAgentActive('generator');
         break;
 
       case 'workflow_complete':
         Chat.addWorkflowComplete(data);
-        document.getElementById('generateNowBtn').classList.add('hidden');
+        document.getElementById('chatShortcuts').classList.add('hidden');
         clearAllAgentActive();
         Chat.disableInput();
         break;
@@ -200,7 +200,7 @@ const App = (() => {
           statusMessageId = null;
         }
         Chat.addAgentMessage('System', `Error: ${data.message}`, '❌');
-        document.getElementById('generateNowBtn').classList.add('hidden');
+        document.getElementById('chatShortcuts').classList.add('hidden');
         Chat.enableInput();
         clearAllAgentActive();
         break;
