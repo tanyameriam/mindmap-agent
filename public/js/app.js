@@ -275,7 +275,8 @@ const App = (() => {
       const selectedProvider = providerSelect.value;
       const options = models[selectedProvider] || [];
 
-      modelSelect.innerHTML = options
+      modelSelect.value = options[0]?.value || '';
+      document.getElementById('modelOptions').innerHTML = options
         .map(opt => `<option value="${opt.value}">${opt.text}</option>`)
         .join('');
     });

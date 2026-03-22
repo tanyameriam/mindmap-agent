@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const ClassifierAgent = require('./classifier');
 const KnowledgeValidatorAgent = require('./knowledgeValidator');
 const StructureBuilderAgent = require('./structureBuilder');
@@ -9,17 +11,40 @@ class OrchestratorAgent {
   constructor(defaultApiKey) {
     this.defaultApiKey = defaultApiKey;
     this.sessions = new Map();
-    this.MAX_GENERATION_TIME = 45000; // 45 seconds target for "Best Output"
-    this.REFINE_BUFFER = 12000; // Minimum time needed for another refinement (Build + Check)
+    this.MAX_GENERATION_TIME = 45000; 
+    this.REFINE_BUFFER = 12000; 
+    this.usageFile = path.join(__dirname, 'usage.json');
+    this.usageLimit = 20;
+    this.loadUsage();
+  }
+
+  loadUsage() {
+    try {
+      const data = fs.readFileSync(this.usageFile, 'utf8');
+      this.usage = JSON.parse(data);
+    } catch (e) {
+      this.usage = { count: 0 };
+    }
+  }
+
+  saveUsage() {
+    try {
+      fs.writeFileSync(this.usageFile, JSON.stringify(this.usage, null, 2));
+    } catch (e) {
+      console.error('Failed to save usage data');
+    }
   }
 
   createSession(id, topic, depth, detailLevel, apiKey, provider = 'google', modelName = 'gemini-2.5-flash') {
+    const usingSystemKey = !apiKey;
     const sessionApiKey = apiKey || this.defaultApiKey;
     const llmService = new LLMService(provider, modelName, sessionApiKey);
 
     this.sessions.set(id, { 
       id, topic, originalTopic: topic, depth, detailLevel, state: 'CLASSIFYING',
       domain: null, purpose: null, uncertainAreas: [], metrics: {}, context: "",
+      usingSystemKey,
+      qualityResult: { completeness: 0, accuracy: 0, balance: 0, summary: "Not yet evaluated." },
       agents: {
         classifier: new ClassifierAgent(llmService),
         validator: new KnowledgeValidatorAgent(llmService),
@@ -36,6 +61,25 @@ class OrchestratorAgent {
   async processInitial(sessionId, sendEvent) {
     const session = this.getSession(sessionId);
     if (!session) return;
+
+    // Check usage limit for system key
+    if (session.usingSystemKey) {
+      if (this.usage.count >= this.usageLimit) {
+        sendEvent('agent_message', { 
+          agent: 'System', 
+          message: '❌ System API key limit reached (20/20 runs consumed). Please provide your own API key in the configuration to continue.',
+          icon: '🛑'
+        });
+        return;
+      }
+      this.usage.count++;
+      this.saveUsage();
+      sendEvent('agent_status', { 
+        agent: 'Workflow Monitor', 
+        message: `System usage: ${this.usage.count}/${this.usageLimit} runs used.` 
+      });
+    }
+
     session.startTime = Date.now();
     await this.runClassifier(session, sendEvent);
   }
@@ -140,6 +184,12 @@ class OrchestratorAgent {
     session.metrics.buildTime = (session.metrics.buildTime || 0) + (Date.now() - start)/1000;
     session.markdown = markdown;
     
+    // Guard: Skip quality check if generation failed
+    if (markdown.includes("API Error") || markdown.trim().length < 20) {
+      this.finishWorkflow(session, sendEvent, 'Mind map generation failed. Skipping quality evaluation.');
+      return;
+    }
+    
     await this.runChecker(session, sendEvent, iteration);
   }
 
@@ -148,55 +198,68 @@ class OrchestratorAgent {
     sendEvent('agent_status', { agent: 'Workflow Monitor', message: 'Evaluating quality metrics...' });
     
     const start = Date.now();
-    const result = await session.agents.checker.checkQuality(session.topic, session.markdown);
-    session.metrics.checkTime = (session.metrics.checkTime || 0) + (Date.now() - start)/1000;
+    let result;
+    try {
+      result = await session.agents.checker.checkQuality(session.topic, session.markdown);
+    } catch (e) {
+      console.error("Checker failed:", e);
+      result = { completeness: 0, accuracy: 0, balance: 0, overall: 0, summary: "Evaluation failed." };
+    }
     
-    const completeness = result.completeness || 0.7;
-    const accuracy = result.accuracy || 0.8;
-    const balance = result.balance || 0.6;
+    session.metrics.checkTime = (session.metrics.checkTime || 0) + (Date.now() - start)/1000;
+    session.qualityResult = result;
+
+    const completeness = result.completeness || 0;
+    const accuracy = result.accuracy || 0;
+    const balance = result.balance || 0;
     const overallScore = (completeness + accuracy + balance) / 3;
-    const elapsedSinceStart = Date.now() - session.generationStartTime;
+    
+    const elapsedSinceStart = Date.now() - (session.generationStartTime || Date.now());
     const timeLeft = this.MAX_GENERATION_TIME - elapsedSinceStart;
 
-    // QUALITY LOOP: If score < 0.9 and we have iterations left AND time budget!
+    // QUALITY LOOP
     if (overallScore < 0.9 && iteration < 3 && timeLeft > this.REFINE_BUFFER) {
       sendEvent('agent_message', { 
         agent: 'Workflow Monitor', 
-        message: `Quality score is ${Math.round(overallScore * 100)}%. Refining further... (${Math.round(timeLeft/1000)}s remaining in budget)`, 
+        message: `Quality score is ${Math.round(overallScore * 100)}%. Refining further... (${Math.round(timeLeft/1000)}s remaining)`, 
         icon: '♻️' 
       });
-      await new Promise(r => setTimeout(r, 500)); // Optimized delay
       return await this.runBuilder(session, sendEvent, iteration + 1, result.suggestions || []);
-    } else if (overallScore < 0.9 && timeLeft <= this.REFINE_BUFFER) {
-      sendEvent('agent_message', { 
-        agent: 'Workflow Monitor', 
-        message: `Quality score is ${Math.round(overallScore * 100)}%. Delivering best version now to meet 45s window.`, 
-        icon: '⏱️' 
-      });
     }
+
+    this.finishWorkflow(session, sendEvent);
+  }
+
+  finishWorkflow(session, sendEvent, errorMessage = null) {
+    const totalTime = ((Date.now() - session.startTime)/1000).toFixed(1);
+    const result = session.qualityResult || { completeness: 0, accuracy: 0, balance: 0, overall: 0, summary: errorMessage || "Not evaluated." };
+    
+    const completeness = result.completeness || 0;
+    const accuracy = result.accuracy || 0;
+    const balance = result.balance || 0;
+    const overallScore = (completeness + accuracy + balance) / 3;
 
     // Save final learnings
     if (result.learnings && Array.isArray(result.learnings)) {
       result.learnings.forEach(l => saveLearning(l));
     }
     
-    const totalTime = ((Date.now() - session.startTime)/1000).toFixed(1);
-
-    // Provide the final markdown output
-    sendEvent('mindmap_ready', { markdown: session.markdown });
+    if (session.markdown) {
+        sendEvent('mindmap_ready', { markdown: session.markdown });
+    }
 
     let summaryString = result.summary || '';
-    summaryString += `\nCompleteness: ${(completeness*100).toFixed(0)}%, Accuracy: ${(accuracy*100).toFixed(0)}%, Balance: ${(balance*100).toFixed(0)}%`;
+    if (overallScore > 0) {
+        summaryString += `\nCompleteness: ${(completeness*100).toFixed(0)}%, Accuracy: ${(accuracy*100).toFixed(0)}%, Balance: ${(balance*100).toFixed(0)}%`;
+    }
 
     sendEvent('workflow_complete', {
-      progress: {
-         totalElapsedFormatted: totalTime + "s"
-      },
+      progress: { totalElapsedFormatted: totalTime + "s" },
       feedback: {
         totalTime: totalTime + "s",
-        rating: Math.round(overallScore * 100) + "% Quality Score",
+        rating: overallScore > 0 ? (Math.round(overallScore * 100) + "% Quality Score") : "N/A",
         summary: summaryString,
-        suggestions: result.suggestions || ["Review uncertain nodes."]
+        suggestions: result.suggestions || (errorMessage ? ["Try a different provider or check your key."] : ["Review uncertain nodes."])
       }
     });
 

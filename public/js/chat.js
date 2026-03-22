@@ -133,6 +133,7 @@ const Chat = (() => {
     el.className = 'workflow-complete';
 
     const suggestionsHtml = (feedback.suggestions || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    const rating = feedback.rating.includes('0%') ? 'N/A' : feedback.rating;
 
     el.innerHTML = `
       <div class="workflow-complete-header">
@@ -146,10 +147,10 @@ const Chat = (() => {
         </div>
         <div class="workflow-stat">
           <div class="workflow-stat-label">Rating</div>
-          <div class="workflow-stat-value">${feedback.rating || '⭐⭐⭐⭐'}</div>
+          <div class="workflow-stat-value">${rating}</div>
         </div>
       </div>
-      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">${escapeHtml(feedback.summary)}</div>
+      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">${rating !== 'N/A' ? escapeHtml(feedback.summary) : 'Could not evaluate quality metrics.'}</div>
       ${suggestionsHtml ? `
         <ul class="workflow-suggestions">${suggestionsHtml}</ul>
       ` : ''}
