@@ -87,7 +87,7 @@ const Chat = (() => {
     enableInput();
   }
 
-  function addTimelineItem(agent, message, status = 'active') {
+  function addTimelineItem(agent, message, status = 'active', icon = '') {
     const container = document.getElementById('timelineContainer');
     if (!container) return;
 
@@ -101,14 +101,17 @@ const Chat = (() => {
 
     const el = document.createElement('div');
     el.className = `timeline-item ${status}`;
+    const time = getTimeString();
     el.innerHTML = `
       <div class="timeline-dot-wrapper">
         <div class="timeline-dot"></div>
       </div>
       <div class="timeline-content">
-        <div class="timeline-agent">${escapeHtml(agent)}</div>
+        <div class="timeline-header">
+          <div class="timeline-agent">${icon ? icon + ' ' : ''}${escapeHtml(agent)}</div>
+          <div class="timeline-time">${time}</div>
+        </div>
         <div class="timeline-message">${escapeHtml(message)}</div>
-        <div class="timeline-time">${getTimeString()}</div>
       </div>
     `;
     container.appendChild(el);

@@ -72,7 +72,7 @@ const App = (() => {
       document.getElementById('sessionTopic').textContent = `Topic: ${topic}`;
 
       // Connect SSE
-      connectSSE(sessionId);
+      connectSSE(sessionId, provider, modelName);
 
       // Add welcome message
       Chat.addAgentMessage(
@@ -93,8 +93,12 @@ const App = (() => {
     }
   }
 
-  function connectSSE(sid) {
+  function connectSSE(sid, provider, modelName) {
     if (eventSource) eventSource.close();
+
+    // Add initial session info to timeline
+    const displayModel = modelName || (provider === 'google' ? 'gemini-1.5-flash' : 'default');
+    Chat.addTimelineItem('System', `Session started using ${provider} (${displayModel})`, 'completed', '🚀');
 
     eventSource = new EventSource(`/api/stream/${sid}`);
 
