@@ -9,6 +9,7 @@ const App = (() => {
   function init() {
     Chat.initInputAutoResize();
     bindEvents();
+    initModelSelector();
   }
 
   function bindEvents() {
@@ -244,6 +245,40 @@ const App = (() => {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  function initModelSelector() {
+    const providerSelect = document.getElementById('providerInput');
+    const modelSelect = document.getElementById('modelInput');
+
+    const models = {
+      google: [
+        { value: 'gemini-2.5-flash', text: 'Gemini 2.5 Flash (Default)' },
+        { value: 'gemini-1.5-flash', text: 'Gemini 1.5 Flash' },
+        { value: 'gemini-1.5-pro', text: 'Gemini 1.5 Pro' },
+        { value: 'gemini-2.0-flash-exp', text: 'Gemini 2.0 Flash Exp' }
+      ],
+      openai: [
+        { value: 'gpt-4o', text: 'GPT-4o (Recommended)' },
+        { value: 'gpt-4o-mini', text: 'GPT-4o Mini' },
+        { value: 'gpt-4-turbo', text: 'GPT-4 Turbo' },
+        { value: 'o1-preview', text: 'o1 Preview' }
+      ],
+      anthropic: [
+        { value: 'claude-3-5-sonnet-latest', text: 'Claude 3.5 Sonnet (Recommended)' },
+        { value: 'claude-3-5-haiku-latest', text: 'Claude 3.5 Haiku' },
+        { value: 'claude-3-opus-latest', text: 'Claude 3 Opus' }
+      ]
+    };
+
+    providerSelect.addEventListener('change', () => {
+      const selectedProvider = providerSelect.value;
+      const options = models[selectedProvider] || [];
+
+      modelSelect.innerHTML = options
+        .map(opt => `<option value="${opt.value}">${opt.text}</option>`)
+        .join('');
+    });
   }
 
   return { init, resetSession };

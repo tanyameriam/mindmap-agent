@@ -13,7 +13,7 @@ class OrchestratorAgent {
     this.REFINE_BUFFER = 12000; // Minimum time needed for another refinement (Build + Check)
   }
 
-  createSession(id, topic, depth, detailLevel, apiKey, provider = 'google', modelName = 'gemini-1.5-flash') {
+  createSession(id, topic, depth, detailLevel, apiKey, provider = 'google', modelName = 'gemini-2.5-flash') {
     const sessionApiKey = apiKey || this.defaultApiKey;
     const llmService = new LLMService(provider, modelName, sessionApiKey);
 
