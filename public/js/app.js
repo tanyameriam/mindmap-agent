@@ -81,7 +81,27 @@ const App = (() => {
         `Starting analysis of "${topic}" with ${depth} levels of depth (${detailLevel} detail). Our agents are now working...`,
         '🎯'
       );
-
+    // Shortcut: Force Generate
+    const generateNowBtn = document.getElementById('generateNowBtn');
+    generateNowBtn.addEventListener('click', async () => {
+      if (!currentSessionId) return;
+      
+      generateNowBtn.disabled = true;
+      Chat.addAgentMessage('System', 'Forcing mind map generation...', '⚡');
+      
+      try {
+        const response = await fetch(`/api/sessions/${currentSessionId}/force-generate`, {
+          method: 'POST'
+        });
+        if (!response.ok) throw new Error('Failed to force generation');
+        generateNowBtn.classList.add('hidden');
+      } catch (error) {
+        console.error('Error forcing generation:', error);
+        Chat.addAgentMessage('System', 'Failed to jump to generation.', '❌');
+      } finally {
+        generateNowBtn.disabled = false;
+      }
+    });
       // Show typing
       Chat.showTyping('Context Clarity Agent is analyzing...');
       setAgentActive('clarity');
@@ -146,6 +166,7 @@ const App = (() => {
           statusMessageId = null;
         }
         Chat.addClarificationQuestions(data.questions);
+        document.getElementById('generateNowBtn').classList.remove('hidden');
         clearAllAgentActive();
         break;
 
@@ -161,11 +182,13 @@ const App = (() => {
           statusMessageId = null;
         }
         MindMap.render(data.markdown);
+        document.getElementById('generateNowBtn').classList.add('hidden');
         setAgentActive('generator');
         break;
 
       case 'workflow_complete':
         Chat.addWorkflowComplete(data);
+        document.getElementById('generateNowBtn').classList.add('hidden');
         clearAllAgentActive();
         Chat.disableInput();
         break;
@@ -177,6 +200,7 @@ const App = (() => {
           statusMessageId = null;
         }
         Chat.addAgentMessage('System', `Error: ${data.message}`, '❌');
+        document.getElementById('generateNowBtn').classList.add('hidden');
         Chat.enableInput();
         clearAllAgentActive();
         break;

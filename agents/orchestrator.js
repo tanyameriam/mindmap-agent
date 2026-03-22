@@ -148,6 +148,21 @@ class OrchestratorAgent {
     await this.runBuilder(session, sendEvent);
   }
 
+  async forceGenerate(sessionId, sendEvent) {
+    const session = this.getSession(sessionId);
+    if (!session) return;
+
+    sendEvent('agent_message', { 
+        agent: 'Workflow Monitor', 
+        message: 'Bypassing clarification. Starting mind map generation now! 🚀', 
+        icon: '⚡' 
+    });
+
+    // Start building immediately
+    session.generationStartTime = Date.now();
+    await this.runBuilder(session, sendEvent, 1, []);
+  }
+
   async runBuilder(session, sendEvent, iteration = 1, previousSuggestions = []) {
     session.state = 'BUILDING';
     

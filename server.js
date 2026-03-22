@@ -99,6 +99,25 @@ app.post('/api/chat/:sessionId', async (req, res) => {
   }
 });
 
+// Force generate mindmap (skip clarification)
+app.post('/api/sessions/:sessionId/force-generate', async (req, res) => {
+  const { sessionId } = req.params;
+  const session = orchestrator.getSession(sessionId);
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+
+  res.json({ status: 'starting_generation' });
+
+  const sendEvent = createSendEvent(sessionId);
+  try {
+    await orchestrator.forceGenerate(sessionId, sendEvent);
+  } catch (error) {
+    console.error('Error force generating:', error);
+    sendEvent('error', { message: error.message });
+  }
+});
+
 // Get session info
 app.get('/api/session/:sessionId', (req, res) => {
   const session = orchestrator.getSession(req.params.sessionId);

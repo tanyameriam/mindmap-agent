@@ -1170,3 +1170,43 @@ body {
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* Shortcut Button */
+.shortcut-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 42px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  margin-left: 8px;
+}
+
+.shortcut-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  filter: brightness(1.1);
+}
+
+.shortcut-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.shortcut-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.shortcut-btn.hidden {
+  display: none;
+}
