@@ -1,0 +1,25 @@
+# Task: Identify Latest Changes and Run Mindmap Generator
+
+- [x] Check last change in `mindmap-generator` <!-- id: 0 -->
+- [x] Compare `mindmap-generator` and `mindmap-agent` for multiple agent integration <!-- id: 1 -->
+- [x] Identify which project is most up-to-date and ready <!-- id: 2 -->
+- [x] Run the latest mindmap agent <!-- id: 3 -->
+- [x] Create `learnings.json` and storage utility <!-- id: 4 -->
+- [x] Modify `Quality Checker` to extract learnings <!-- id: 5 -->
+- [x] Modify `Structure Builder` to use previous learnings <!-- id: 6 -->
+- [x] Update `Orchestrator` to coordinate learning flow <!-- id: 7 -->
+- [x] Add API Key input field to UI <!-- id: 8 -->
+- [x] Update backend to use user-provided API key <!-- id: 9 -->
+- [x] Document agent instructions and scoring logic <!-- id: 10 -->
+- [x] Implement Quality Iteration Loop in Orchestrator <!-- id: 11 -->
+- [x] Refine Context Clarity for "Complete Context" <!-- id: 12 -->
+- [x] Make Knowledge Validator casual and friendly <!-- id: 13 -->
+- [x] Move system logs to a Timeline Sidebar (Right Panel) <!-- id: 14 -->
+- [x] Optimize execution time and delays <!-- id: 15 -->
+- [x] Implement 45-second High-Quality Generation Loop <!-- id: 16 -->
+- [x] Refine Orchestrator to monitor generation-specific elapsed time <!-- id: 17 -->
+- [x] Add Architecture Diagram to agent_logic.md <!-- id: 18 -->
+- [x] Implement Multi-Provider LLM Adapter (Gemini, OpenAI, Claude) <!-- id: 19 -->
+- [x] Add Provider/Model selector to UI <!-- id: 20 -->
+- [x] Update Backend to route requests based on provider <!-- id: 21 -->
+- [x] Verify functionality with different providers <!-- id: 22 -->
