@@ -56,7 +56,29 @@ const Chat = (() => {
     scrollToBottom();
   }
 
-  function addClarificationQuestions(questions) {
+  function addClarificationWizard(question, index, total) {
+    const styles = getAgentStyles('clarity');
+    const el = document.createElement('div');
+    el.className = 'message agent wizard-message';
+    el.innerHTML = `
+      <div class="message-avatar ${styles.avatarClass}">${styles.icon}</div>
+      <div class="message-body">
+        <div class="message-header">
+          <span class="message-agent-name ${styles.nameClass}">Context Clarity Agent</span>
+          <span class="message-time">${getTimeString()}</span>
+        </div>
+        <div class="message-content">
+          <span class="wizard-counter">Question ${index + 1} of ${total}</span>
+          <div class="wizard-question-text">${escapeHtml(question)}</div>
+        </div>
+      </div>
+    `;
+    messagesContainer().appendChild(el);
+    scrollToBottom();
+    enableInput();
+  }
+
+  function addClarificationChoice(data) {
     const styles = getAgentStyles('clarity');
     const el = document.createElement('div');
     el.className = 'message agent';
@@ -68,23 +90,19 @@ const Chat = (() => {
           <span class="message-time">${getTimeString()}</span>
         </div>
         <div class="message-content">
-          I have a few questions to ensure we create the best mind map for you:
-          <ul class="questions-list">
-            ${questions.map((q, i) => `
-              <li class="question-item">
-                <span class="question-number">${i + 1}.</span>
-                <button class="question-btn" onclick="document.getElementById('chatInput').value='${escapeHtml(q).replace(/'/g, "\\'")}'; document.getElementById('sendBtn').click();">
-                  ${escapeHtml(q)}
-                </button>
-              </li>
+          ${escapeHtml(data.message)}
+          <div class="chat-shortcuts" style="margin-top: 12px; display: flex; gap: 8px;">
+            ${data.options.map(opt => `
+              <button class="shortcut-btn" onclick="window.App.handleChoice('${escapeHtml(opt).replace(/'/g, "\\'")}')">
+                ${escapeHtml(opt)}
+              </button>
             `).join('')}
-          </ul>
+          </div>
         </div>
       </div>
     `;
     messagesContainer().appendChild(el);
     scrollToBottom();
-    enableInput();
   }
 
   function addTimelineItem(agent, message, status = 'active', icon = '') {
@@ -229,7 +247,8 @@ const Chat = (() => {
   return {
     addAgentMessage,
     addUserMessage,
-    addClarificationQuestions,
+    addClarificationWizard,
+    addClarificationChoice,
     addStatusMessage,
     addWorkflowUpdate,
     addWorkflowComplete,

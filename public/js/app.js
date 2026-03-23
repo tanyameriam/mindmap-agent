@@ -5,6 +5,10 @@ const App = (() => {
   let sessionId = null;
   let eventSource = null;
   let statusMessageId = null;
+  let wizardQuestions = [];
+  let wizardIndex = 0;
+  let wizardAnswers = [];
+  let isWizardMode = false;
 
   function init() {
     Chat.initInputAutoResize();
@@ -165,8 +169,21 @@ const App = (() => {
           Chat.removeStatus(statusMessageId);
           statusMessageId = null;
         }
-        Chat.addClarificationQuestions(data.questions);
+        
+        wizardQuestions = data.questions || [];
+        wizardIndex = 0;
+        wizardAnswers = [];
+        isWizardMode = true;
+        
+        startWizardStep();
         document.getElementById('chatShortcuts').classList.remove('hidden');
+        clearAllAgentActive();
+        break;
+
+      case 'clarification_choice':
+        Chat.hideTyping();
+        Chat.addClarificationChoice(data);
+        isWizardMode = false;
         clearAllAgentActive();
         break;
 
@@ -210,11 +227,34 @@ const App = (() => {
   async function handleSend() {
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
-    if (!message || !sessionId) return;
+    if (!message || (!sessionId && !isWizardMode)) return;
 
     Chat.addUserMessage(message);
     input.value = '';
     input.style.height = 'auto';
+
+    if (isWizardMode) {
+      wizardAnswers.push({ question: wizardQuestions[wizardIndex], answer: message });
+      wizardIndex++;
+      
+      if (wizardIndex < wizardQuestions.length) {
+        // Next local question
+        setTimeout(() => {
+          Chat.addClarificationWizard(wizardQuestions[wizardIndex], wizardIndex, wizardQuestions.length);
+        }, 500);
+        return;
+      } else {
+        // Wizard finished, send all to server
+        isWizardMode = false;
+        const combinedMessage = wizardAnswers.map(a => `Q: ${a.question}\nA: ${a.answer}`).join('\n\n');
+        sendToServer(combinedMessage);
+      }
+    } else {
+      sendToServer(message);
+    }
+  }
+
+  async function sendToServer(message) {
     Chat.disableInput();
     Chat.showTyping('Context Clarity Agent is evaluating...');
     setAgentActive('clarity');
@@ -230,6 +270,28 @@ const App = (() => {
       Chat.hideTyping();
       Chat.addAgentMessage('System', 'Failed to send message. Please try again.', '❌');
       Chat.enableInput();
+    }
+  }
+
+  function startWizardStep() {
+    if (wizardQuestions.length > 0) {
+      Chat.addClarificationWizard(wizardQuestions[wizardIndex], wizardIndex, wizardQuestions.length);
+    }
+  }
+
+  async function handleChoice(option) {
+    Chat.addUserMessage(option);
+    
+    if (option.includes('Generate')) {
+        // Force generate
+        try {
+            await fetch(`/api/sessions/${sessionId}/force-generate`, { method: 'POST' });
+        } catch (e) {
+            console.error(e);
+        }
+    } else {
+        // Continue clarifying
+        sendToServer("I'd like to continue clarifying.");
     }
   }
 
@@ -306,7 +368,9 @@ const App = (() => {
     });
   }
 
-  return { init, resetSession };
+  return { init, resetSession, handleChoice };
 })();
+
+window.App = App;
 
 console.log('🚀 MindMap App Module Loaded');

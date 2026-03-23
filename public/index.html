@@ -103,26 +103,28 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="depthInput">Depth (Levels)</label>
+            <label for="depthInput">Exploration Depth</label>
             <div class="select-wrapper">
               <select id="depthInput">
-                <option value="2">2 Levels</option>
-                <option value="3" selected>3 Levels</option>
-                <option value="4">4 Levels</option>
-                <option value="5">5 Levels</option>
+                <option value="2">2 Levels (Broad)</option>
+                <option value="3" selected>3 Levels (Default)</option>
+                <option value="4">4 Levels (Deep)</option>
+                <option value="5">5 Levels (Expert)</option>
               </select>
             </div>
+            <small class="form-help">How many layers of sub-topics to explore.</small>
           </div>
 
           <div class="form-group">
-            <label for="detailInput">Detail Level</label>
+            <label for="detailInput">Content Detail</label>
             <div class="select-wrapper">
               <select id="detailInput">
-                <option value="concise">Concise</option>
-                <option value="moderate" selected>Moderate</option>
-                <option value="detailed">Detailed</option>
+                <option value="concise">Concise (Keywords)</option>
+                <option value="moderate" selected>Moderate (Standard)</option>
+                <option value="detailed">Detailed (Full Text)</option>
               </select>
             </div>
+            <small class="form-help">How descriptive each node should be.</small>
           </div>
         </div>
 

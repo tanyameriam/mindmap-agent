@@ -43,7 +43,7 @@ class OrchestratorAgent {
     this.sessions.set(id, { 
       id, topic, originalTopic: topic, depth, detailLevel, state: 'CLASSIFYING',
       domain: null, purpose: null, uncertainAreas: [], metrics: {}, context: "",
-      usingSystemKey,
+      usingSystemKey, clarificationRounds: 0,
       qualityResult: { completeness: 0, accuracy: 0, balance: 0, summary: "Not yet evaluated." },
       agents: {
         classifier: new ClassifierAgent(llmService),
@@ -112,6 +112,20 @@ class OrchestratorAgent {
     session.metrics.classifyTime = (Date.now() - start)/1000;
 
     if (result.isAmbiguous) {
+      session.clarificationRounds++;
+      
+      if (session.clarificationRounds > 1) {
+        session.state = 'WAITING_CLARIFICATION';
+        const choiceMsg = `We've had a few rounds of clarification. I still have some ideas to refine, but we can also jump straight into building the mind map with what I have so far.\n\n**Areas that could still use clarity:**\n${(result.clarificationQuestions || []).map(q => `- ${q}`).join('\n')}\n\nWhat would you like to do?`;
+        
+        sendEvent('agent_message', { agent: 'Context Clarity', message: choiceMsg, icon: '🤔' });
+        sendEvent('clarification_choice', { 
+            message: "Continue clarifying or generate now?",
+            options: ["Continue clarifying", "Generate Mind Map now"] 
+        });
+        return;
+      }
+
       session.state = 'WAITING_CLARIFICATION';
       sendEvent('agent_message', { agent: 'Context Clarity', message: 'Your topic is quite broad or ambiguous. Please provide more clarity:' });
       sendEvent('clarification_questions', { questions: result.clarificationQuestions || ["Please specify what exactly you want mapped."] });
